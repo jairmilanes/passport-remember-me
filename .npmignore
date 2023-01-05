@@ -1,17 +1,20 @@
-README.md
-Makefile
-doc/
-examples/
-test/
+.idea
+example/
+tests/
 coverage/
 src/
-# Mac OS X
 .DS_Store
-
-# Node.js
 .npmignore
+.eslintignore
+.eslintrc.json
+.prettierignore
+.prettierrc.json
+.release-please-manifest.json
+release-please-config.json
+tsconfig.json
+tsconfig.lib.json
+tsconfig.test.json
 node_modules/
 npm-debug.log
-
-# Git
+jest.config.js
 .git*

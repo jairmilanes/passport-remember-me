@@ -22,6 +22,8 @@ const pkginfo_1 = __importDefault(require("pkginfo"));
  * Module dependencies.
  */
 __exportStar(require("./strategy"), exports);
+__exportStar(require("./middleware"), exports);
+__exportStar(require("./types"), exports);
 /**
  * Module version.
  */

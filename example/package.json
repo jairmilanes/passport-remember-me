@@ -1,0 +1,48 @@
+{
+  "name": "passport-remember-me-example",
+  "version": "0.0.1",
+  "description": "A simple running example of the @jmilanes/passport-remember-me srategy.",
+  "main": "index.js",
+  "scripts": {
+    "compile": "tsc -p ./tsconfig.json",
+    "start": "nodemon",
+    "serve": "node ./build/index.js",
+    "copy": "copyfiles -u 1 \"./views/**/*.*\" ./build/views",
+    "build": "npm run compile && npm run copy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/jairmilanes/passport-remember-me.git"
+  },
+  "keywords": [
+    "passport",
+    "auth",
+    "authentication",
+    "typescript",
+    "remember-me"
+  ],
+  "author": "Jair Milanes",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jairmilanes/passport-remember-me/issues"
+  },
+  "homepage": "https://github.com/jairmilanes/passport-remember-me#readme",
+  "dependencies": {
+    "@jmilanes/passport-remember-me": "../dist",
+    "cookie-parser": "^1.4.6",
+    "ejs-locals": "^1.0.2",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "flat-file-db": "^1.0.0",
+    "highlight.js": "^11.7.0",
+    "markdown-it": "^13.0.1",
+    "passport": "^0.6.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/express-session": "^1.17.5",
+    "@types/highlight.js": "^10.1.0",
+    "@types/markdown-it": "^12.2.3",
+    "copyfiles": "^2.4.1"
+  }
+}

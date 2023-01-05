@@ -38,7 +38,6 @@ describe('Utils', () => {
             }
         };
 
-        console.log(utils.merge(ob1, ob2))
         expect(utils.merge(ob1, ob2)).toEqual(result);
     })
 })

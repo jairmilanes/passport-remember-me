@@ -1,0 +1,34 @@
+<% layout('layout') -%>
+<div class="d-flex">
+    <div class="avatar me-5">
+        <img src="https://media3.giphy.com/media/GCL3zPUIB7UO4UX01N/giphy.gif?cid=790b76114486c484f0132afde42f16704cde2bd2db2cb6a2&amp;rid=giphy.gif&amp;ct=g"
+             alt="Uncanny Animals GIF"
+             class="img-fluid"
+        />
+    </div>
+    <div class="flex-fill">
+        <h1 class="display-2 fw-bolder"><%= user.username %></h1>
+
+        <p class="text-muted">
+            Go to the Applications tab in your developer console, look for the "Cookies" section and verify that
+            you have a <span class="fw-bolder">rememberMe</span> entry.
+        </p>
+
+        <p class="text-muted">
+            The cookie key name along with other variables are customizable when initializing the
+            <span class="fw-bolder">RememberMe</span> strategy.
+        </p>
+
+        <p class="text-muted pb-5">
+            Use the buttons below to test, signin-out keeping the cookie will allow make it so once the page is redirected
+            user will still be logged in, the default sign-out will completly destroy the cookie, forcing the user to sign
+            back in.
+        </p>
+
+        <div class="d-flex">
+            <a href="/shallow-sign-out" class="btn btn-lg btn-info me-4 text-white">Sign-Out keeping cookie</a>
+            <a href="/sign-out" class="btn btn-lg btn-primary">Sign-Out purging cookie</a>
+        </div>
+    </div>
+</div>
+

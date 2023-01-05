@@ -1,0 +1,47 @@
+<% layout('layout') -%>
+<% if (messages) { %>
+	<% for(var i=0; i<messages.length; i++) {%>
+		<p><%= messages[i] %></p>
+	<% } %>
+<% } %>
+<div class="row">
+	<div class="col-12 col-md-6">
+		<h1 class="mb-4">
+			Sign-In
+			<small class="d-block">with Remember-Me</small>
+		</h1>
+
+		<p class="mb-4 lead">The Form is pre-filled with a valid user for testing purpuses.</p>
+
+		<p class="text-muted">
+			Once signed-in, check the applications tab in your developer console to find your generated
+			remember-me cookie.
+		</p>
+
+		<p class="text-muted">
+			Unchecking the remember-me checkbox, will prevent the cookie from being
+			generated.
+		</p>
+	</div>
+	<div class="col-12 col-md-5 offset-md-1">
+		<form method="post" action="/sign-in">
+			<div class="mb-3">
+				<label for="username" class="form-label">Email</label>
+				<input name="username" type="text" value="bob" class="form-control form-control-lg" id="username">
+			</div>
+			<div class="mb-4">
+				<label for="password" class="form-label">Password</label>
+				<input name="password" type="password" value="secret" class="form-control form-control-lg" id="password">
+			</div>
+			<div class="form-check mb-4">
+				<input name="remember-me" class="form-check-input" type="checkbox" checked>
+				<label class="form-check-label" for="gridCheck1">
+					Remember me
+				</label>
+			</div>
+			<div class="d-flex justify-content-end">
+				<button type="submit" class="btn btn-primary btn-lg btn-info text-white">Sign-In</button>
+			</div>
+		</form>
+	</div>
+</div>

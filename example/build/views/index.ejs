@@ -1,0 +1,13 @@
+<% layout('layout') -%>
+<% if (messages) { %>
+    <div class="col col-12 mb-5">
+        <% for(var i=0; i<messages.length; i++) {%>
+            <div class="alert alert-info"><%= messages[i] %></div>
+        <% } %>
+    </div>
+<% } %>
+<div class="col col-12">
+    <div class="doc d-flex flex-column">
+        <%- readme %>
+    </div>
+</div>

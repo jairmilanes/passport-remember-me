@@ -1,4 +1,13 @@
 
+
+export class Response {
+    clearCookie = jest.fn();
+
+    cookie = jest.fn();
+
+    redirect = jest.fn()
+}
+
 export class Request {
     res = new Response()
 
@@ -6,13 +15,13 @@ export class Request {
         id: ""
     };
 
+    body = {}
+
     isAuthenticated = jest.fn()
 
     cookies = {}
-}
 
-export class Response {
-    clearCookie = jest.fn();
-
-    cookie = jest.fn();
+    logout = jest.fn().mockImplementation((cb) => {
+        if (cb) cb();
+    })
 }

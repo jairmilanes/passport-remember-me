@@ -1,11 +1,13 @@
-/**
- * Module dependencies.
- */
-import {Strategy} from "passport-strategy";
-import { Request } from "express";
-import {GenericObject, IssueFunction, RememberMeOptions, VerifyFunction} from "./types";
-import * as utils from "./utils";
-
+import {Strategy as BaseStrategy} from "passport-strategy";
+import {Request} from "express";
+import {
+  GenericLoggerInterface,
+  GetUserCallback,
+  RememberMeOptions,
+  SaveTokenCallback
+} from "./types";
+import {decode, encode} from "./token";
+import {Config} from "./config";
 
 /**
  * `Strategy` constructor.
@@ -15,70 +17,66 @@ import * as utils from "./utils";
  * @param {function} issue
  * @api public
  */
-export class RememberMeStrategy extends Strategy {
-
-  /**
-   * Strategy name, used to identify it within passport.
-   */
-  name = 'remember-me';
-  /**
-   * Key used to name the remember me token,
-   * will fallback to Strategy name if none is provided.
-   */
-  _key: string;
-  /**
-   * Strategy options object, including cookie configuration.
-   * Customize it by passing one to the constructor.
-   */
-  _opts: GenericObject;
-  private readonly _verify: VerifyFunction;
-  private readonly _issue: IssueFunction;
+export class Strategy extends BaseStrategy {
+  name = "rememberMe";
   private _req?: Request;
-  private _user: any;
-  private _info: any;
 
-  constructor(options: RememberMeOptions | VerifyFunction, verify: VerifyFunction | IssueFunction, issue?: IssueFunction) {
+  readonly getUser: GetUserCallback;
+  readonly saveToken: SaveTokenCallback;
+
+  private logger?: GenericLoggerInterface;
+
+  constructor(options: RememberMeOptions, getUser: GetUserCallback, saveToken: SaveTokenCallback) {
     super();
 
-    if (typeof options === 'function') {
-      issue = verify;
-      verify = options;
-      options = {};
+    if (!getUser || !saveToken) {
+      throw new Error("Must provide a getUser and saveToken callback.")
     }
 
-    if (!verify) throw new Error('remember me cookie authentication strategy requires a verify function');
+    const { logger, ...rest } = options;
 
-    if (!issue) throw new Error('remember me cookie authentication strategy requires an issue function');
+    Config.create(rest);
 
-    const { key, cookie } = options;
+    this.getUser = getUser;
+    this.saveToken = saveToken;
 
-    this._key = key || this.name;
+    if (typeof logger !== "boolean" && logger?.log) {
+      this.logger = logger
+    }
 
-    const opts = { path: '/', httpOnly: true, maxAge: 604800000 }; // maxAge: 7 days
-
-    this._opts = utils.merge(opts, cookie);
-
-    this._verify = verify;
-    this._issue = issue;
+    if (typeof logger === "boolean" && logger) {
+      this.logger = {
+        log: (message: string, error?: Error) => console.warn(message, error)
+      };
+    }
   }
 
-  authenticate(req: Request) {
+  async authenticate(req: Request, options?: Partial<RememberMeOptions>) {
     this._req = req;
-    this._user = null;
-    this._info = null;
+
+    Config.merge(options || {});
 
     // User already authenticated, pass...
     if (req.isAuthenticated()) {
       return this.pass();
     }
 
-    const token = this._req.cookies[this._key];
+    const token = req.cookies[Config.get<string>("cookieName")] || null;
 
     // No previous cookie, no verification needed, pass...
-    if (!token) { return this.pass(); }
+    if (!token) {
+      return this.pass();
+    }
+
+    const { error, payload } = decode(token);
+
+    if (error) {
+      this.logger?.log("Remember Me: Token decode error, skipping...", token, error);
+      return this.pass();
+    }
 
     // Request cookie verification...
-    this._verify(token, this.verified.bind(this));
+    await this.getUser(payload, token, this.refresh.bind(this));
   }
 
   /**
@@ -86,34 +84,44 @@ export class RememberMeStrategy extends Strategy {
    * or request a new token to be issued if a user was returned
    * from verify.
    */
-  private verified(err?: Error | null, user?: any, info?: any) {
-    if (err) { return this.error(err); }
-
-    if (!user) {
-      // Token did not evaluate to an existing user
-      // pass and allow for other authentication methods.
-      this._req?.res?.clearCookie(this._key);
-
+  private refresh(error?: Error | null, user?: any, info?: any) {
+    if (error) {
+      this.logger?.log("Remember Me: Get user error, skipping...", error);
       return this.pass();
     }
 
-    // Token was valid and returned a user
-    this._user = user;
-    this._info = info;
+    this._req?.res?.clearCookie(Config.get("cookieName"));
 
-    // Must re-issue the token for security purpouses
-    this._issue(user, this.issued.bind(this));
-  }
+    if (!user) {
+      this.logger?.log("Remember Me: User not found, skipping...", error);
+      // Token did not evaluate to an existing user
+      // pass and allow for other authentication methods.
+      return this.pass();
+    }
 
-  /**
-   * Token issued callback, creates a new cookie with the freshlly
-   * issued token and authenticate the user.
-   */
-  private issued(error?: Error | null, token?: string | null) {
-    if (error) { return this.error(error); }
+    const { error: encodeError, token } = encode(user.id);
 
-    this._req?.res?.cookie(this._key, token, this._opts);
+    if (encodeError) {
+      this.logger?.log("Remember Me: Token encode error, skipping...", error);
+      return this.pass();
+    }
 
-    return this.success(this._user, this._info);
+    this.saveToken(token as string, user.id, (error?: Error) => {
+      if (error) {
+        this.logger?.log("Remember Me: Save token error, skipping...", error);
+        // Saving token failed, pass instead of error
+        // pass and allow for other authentication methods.
+        this.pass();
+      }
+
+      this._req?.res?.cookie(Config.get("cookieName"), token, Config.get("cookie"));
+
+      if (this._req?.session) {
+        this._req.session.rememberMe = true;
+      }
+
+      return this.success(user, info);
+    })
   }
 }
+
