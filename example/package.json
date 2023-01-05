@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/jairmilanes/passport-remember-me#readme",
   "dependencies": {
-    "@jmilanes/passport-remember-me": "../dist",
+    "@jmilanes/passport-remember-me": "../",
     "cookie-parser": "^1.4.6",
     "ejs-locals": "^1.0.2",
     "express": "^4.18.2",
