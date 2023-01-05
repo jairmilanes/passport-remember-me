@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./build",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "../node_modules/@types",
+      "./node_modules/@types",
+      "./types"
+    ]
+  },
+  "files": [
+    "./index.ts",
+    "./types/flat-file-db.d.ts",
+    "./types/express-session.d.ts",
+    "./types/globals.d.ts"
+  ],
+  "include": ["./**/*"],
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
+}

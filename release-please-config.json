@@ -1,0 +1,17 @@
+{
+  "packages": {
+    ".": {
+      "token": "secrets.TOKEN",
+      "changelog-path": "CHANGELOG.md",
+      "package-name": "@jmilanes/passport-remember-me",
+      "release-type": "node",
+      "target-branch": "master",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": true,
+      "initial-version": "0.0.1"
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

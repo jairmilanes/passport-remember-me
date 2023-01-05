@@ -1,9 +1,35 @@
 import * as ex from "express";
-import { RememberMeStrategy } from "../src/index";
-import {VerifyCallback} from "../src/types";
+import jsonwebtoken from "jsonwebtoken";
+import {CookieOptions} from "express";
+import {
+  Strategy as RememberMeStrategy,
+  RefreshCallback,
+  RememberMeOptions,
+  TokenSavedCallback
+} from "../src";
+import {Config} from "../src/config";
+import * as tokenMng from "../src/token";
+import {decode, encode} from "../src/token";
 
 describe('Passport Remember-Me', function() {
-    
+  let user = { id: "user_id" };
+  let req: ex.Request;
+  let cookieToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyX2lkIiwicmQiOjE2NzI4NjA5NDg5MjgsImlhdCI6MTY3Mjg2MDk0OH0.-d1EVMxjgFSbLaYh-X3YZoNo4v4ZmUz2NDDxpG7LLfE";
+  let cookieName = "TEST";
+  let options: RememberMeOptions = {
+    salt: "adasdasdasd",
+    cookieName,
+    keyName: "my-remember-me",
+    logger: undefined,
+    successRedirect: "/profile",
+    cookie: {
+      maxAge: 47859,
+      secure: true,
+      path: '/',
+      httpOnly: true,
+    }
+  };
+
   it('should export version', function() {
     expect(true).toEqual(true)
   });
@@ -12,22 +38,85 @@ describe('Passport Remember-Me', function() {
     expect(RememberMeStrategy).toBeDefined()
   });
 
-  describe('Strategy', () => {
-    let req: ex.Request;
-    let cookieToken = "OPIUOIJODSDSSD";
-    let key = "TEST";
-    let user = { id: "urser_id" };
+  describe('Token', () => {
+    beforeEach(() => {
+      Config.create(options)
+    })
 
+    it('should encode/decode a token', () => {
+      const encoded = encode(user.id);
+
+      expect(encoded.error).toBeUndefined();
+      expect(encoded.token).not.toBeUndefined();
+
+      const decoded = decode(encoded.token as string);
+
+      expect(decoded.error).toBeUndefined();
+      expect(decoded.payload).toEqual(user.id);
+    })
+
+    it('should encode/decode a token using callback', () => {
+      const encodeCb = jest.fn();
+
+      encode(user.id, encodeCb);
+
+      expect(encodeCb).toHaveBeenCalled()
+      expect(encodeCb.mock.calls[0][0]).toBeUndefined();
+      expect(encodeCb.mock.calls[0][1]).not.toBeUndefined();
+
+      const decodeCb = jest.fn();
+      decode(encodeCb.mock.calls[0][1] as string, decodeCb);
+
+      expect(decodeCb).toHaveBeenCalled()
+      expect(decodeCb.mock.calls[0][0]).toBeUndefined();
+      expect(decodeCb.mock.calls[0][1]).not.toBeUndefined();
+      expect(decodeCb.mock.calls[0][1]).toEqual(user.id);
+    })
+
+    it('should return error if token is invalid', () => {
+      const signSpy = jest.spyOn(jsonwebtoken, "sign");
+
+      signSpy.mockImplementationOnce(() => {
+        throw new Error("Test");
+      })
+
+      // @ts-ignore
+      const encoded = encode(user.id);
+
+      expect(encoded.error).not.toBeUndefined();
+      expect(encoded.token).toBeUndefined();
+
+      const verifySpy = jest.spyOn(jsonwebtoken, "verify");
+
+      verifySpy.mockImplementationOnce(() => {
+        throw new Error("Test");
+      })
+
+      // @ts-ignore
+      const decoded = decode("iadhiadh");
+
+      expect(decoded.error).not.toBeUndefined();
+      expect(decoded.payload).not.toEqual(user.id);
+    })
+  })
+
+  describe('Strategy', () => {
     beforeEach(() => {
       // @ts-ignore
       req = new ex.Request();
-      req.cookies[key] = cookieToken
+      req.cookies[cookieName] = cookieToken
+    })
+
+    afterEach(() => {
+      jest.resetAllMocks()
+      jest.restoreAllMocks()
+      delete req.cookies[cookieName];
     })
 
     it('should throw if callbacks are not provided', function() {
       expect(() => {
         // @ts-ignore
-        new RememberMeStrategy(() => null, null)
+        new RememberMeStrategy({}, () => null, null)
       }).toThrow()
 
       expect(() => {
@@ -37,23 +126,16 @@ describe('Passport Remember-Me', function() {
     });
 
     it('should set properties from options object', function() {
-      const instance = new RememberMeStrategy({
-        key,
-        cookie: {
-          maxAge: 47859
-        }
-      }, () => null, () => null)
-      expect(instance).toHaveProperty("_key", key);
-      expect(instance).toHaveProperty("_opts.maxAge", 47859);
+      const instance = new RememberMeStrategy(options, () => null, () => null);
+      expect(Config.get("salt")).toEqual(options.salt);
+      expect(Config.get("cookieName")).toEqual(options.cookieName);
+      expect(Config.get("keyName")).toEqual(options.keyName);
+      expect(Config.get("successRedirect")).toEqual(options.successRedirect);
+      expect(Config.get<CookieOptions>("cookie")).toEqual(options.cookie);
     });
 
     it('should pass if request is authenticated', function() {
-      const instance = new RememberMeStrategy({
-        key,
-        cookie: {
-          maxAge: 47859
-        }
-      }, () => null, () => null);
+      const instance = new RememberMeStrategy(options, (userId: string) => null, (token: string) => null);
 
       jest.mocked(req.isAuthenticated).mockReturnValueOnce(true);
       instance.authenticate(req);
@@ -62,123 +144,103 @@ describe('Passport Remember-Me', function() {
     });
 
     it('should pass if request has no token', function() {
-      const instance = new RememberMeStrategy({}, () => null, () => null);
+      const instance = new RememberMeStrategy(options, () => null, () => null);
+
+      delete req.cookies[cookieName]
 
       instance.authenticate(req);
 
       expect(instance.pass).toHaveBeenCalledTimes(1);
     });
 
-    it('should call verified after token verification', function () {
-      const verify = jest.fn().mockImplementationOnce((token: string, done: VerifyCallback) => {
+    it('should pass if decoding a user returns an error', function () {
+      const error = new Error("");
+      const decode = jest.spyOn(tokenMng, "decode");
+
+      decode.mockImplementationOnce(() => ({ error }));
+
+      const instance = new RememberMeStrategy(options, () => null, () => null);
+
+      instance.authenticate(req);
+
+      expect(instance.pass).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call getUser after decoding the token', function () {
+      const getUser = jest.fn();
+
+      const instance = new RememberMeStrategy(options, getUser, () => null);
+
+      req.cookies[cookieName] = cookieToken;
+
+      instance.authenticate(req);
+
+      expect(getUser).toHaveBeenCalledTimes(1);
+      expect(getUser.mock.calls[0][0]).toEqual(user.id);
+    });
+
+    it('should refresh the token if getUser was successfull', function () {
+      const encode = jest.spyOn(tokenMng, "encode");
+
+      const getUser = jest.fn().mockImplementationOnce((userId: string, token: string, done: RefreshCallback) => {
         done(null, user);
       });
 
-      const instance = new RememberMeStrategy({ key }, verify, () => null);
+      const saveToken = jest.fn().mockImplementationOnce((token: string, userId: string, done: TokenSavedCallback) => {
+        done();
+      });
 
-      // @ts-ignore
-      const spy = jest.spyOn(instance, "verified");
+      const instance = new RememberMeStrategy(options, getUser, saveToken);
+
+      req.cookies[cookieName] = cookieToken;
 
       instance.authenticate(req);
 
-      expect(verify).toHaveBeenCalledTimes(1);
-      // @ts-ignore
-      expect(spy).toHaveBeenCalledWith(null, user);
+      expect(getUser).toHaveBeenCalledTimes(1);
+      expect(req.res?.clearCookie).toHaveBeenCalledTimes(1);
+      expect(encode).toHaveBeenCalledWith(user.id);
+      expect(saveToken).toHaveBeenCalledTimes(1);
+      expect(saveToken.mock.calls[0][0]).not.toBeUndefined();
+      expect(saveToken.mock.calls[0][0]).not.toEqual(cookieToken);
+      expect(saveToken.mock.calls[0][1]).toEqual(user.id);
     });
 
-    it('should return an error if verify returns an error', function () {
-      const error = new Error("test")
-
-      const verify = jest.fn().mockImplementationOnce((token: string, done) => {
-        done(error);
-      });
-
-      const issue = jest.fn();
-
-      const instance = new RememberMeStrategy({ key }, verify, issue);
-
-      instance.authenticate(req);
-
-      expect(verify).toHaveBeenCalledTimes(1);
-      // @ts-ignore
-      expect(instance.error).toHaveBeenCalledWith(error);
-      expect(issue).not.toHaveBeenCalled();
-    });
-
-    it('should request to issue a new token if user exists', function () {
-      const token = "asdasdkadkaj";
-
-      const verify = jest.fn().mockImplementationOnce((token: string, done) => {
-        done(null, user);
-      });
-
-      const issue = jest.fn().mockImplementationOnce((user: string, done) => {
-        done(null, token);
-      });
-
-      const instance = new RememberMeStrategy({ key }, verify, issue);
-
-      // @ts-ignore
-      const issued = jest.spyOn(instance, "issued");
-
-      issued.mockImplementationOnce(() => "");
-
-      instance.authenticate(req);
-
-      expect(verify).toHaveBeenCalledTimes(1);
-      expect(issue).toHaveBeenCalledTimes(1);
-      // @ts-ignore
-      expect(issue.mock.calls[0][0]).toEqual(user);
-      // @ts-ignore
-      expect(Object.create(instance.issued.prototype)).toBeInstanceOf(issue.mock.calls[0][1]);
-      expect(issued).toHaveBeenCalledTimes(1)
-      expect(issued).toHaveBeenCalledWith(null, token)
-    });
-
-    it('should error if issue callback returns an error', function () {
+    it('should pass if saveToken returns an error', function () {
       const error = new Error('test');
 
-      const verify = jest.fn().mockImplementationOnce((token: string, done) => {
+      const getUser = jest.fn().mockImplementationOnce((userId: string, token: string, done: RefreshCallback) => {
         done(null, user);
       });
 
-      const issue = jest.fn().mockImplementationOnce((user: string, done) => {
+      const saveToken = jest.fn().mockImplementationOnce((token: string, userId: string, done: TokenSavedCallback) => {
         done(error);
       });
 
-      const instance = new RememberMeStrategy({ key }, verify, issue);
-
-      // @ts-ignore
-      const issued = jest.spyOn(instance, "issued");
+      const instance = new RememberMeStrategy(options, getUser, saveToken);
 
       instance.authenticate(req);
 
-      expect(issue.mock.calls[0][0]).toEqual(user);
-      expect(issued).toHaveBeenCalledWith(error);
-      expect(instance.error).toHaveBeenCalledWith(error);
+      expect(instance.pass).toHaveBeenCalled();
     });
 
     it('should create a cookie with the token returned from issue', function () {
-      const token = "asdasdkadkaj";
-
-      const verify = jest.fn().mockImplementationOnce((token: string, done) => {
+      const getUser = jest.fn().mockImplementationOnce((userId: string, token: string, done: RefreshCallback) => {
         done(null, user);
       });
 
-      const issue = jest.fn().mockImplementationOnce((user: string, done) => {
-        done(null, token);
+      const saveToken = jest.fn().mockImplementationOnce((token: string, userId: string, done: TokenSavedCallback) => {
+        done();
       });
 
-      const instance = new RememberMeStrategy({ key }, verify, issue);
-
-      // @ts-ignore
-      const issued = jest.spyOn(instance, "issued");
+      const instance = new RememberMeStrategy(options, getUser, saveToken);
 
       instance.authenticate(req);
 
-      expect(issue.mock.calls[0][0]).toEqual(user);
-      expect(issued).toHaveBeenCalledWith(null, token);
-      expect(req.res?.cookie).toHaveBeenCalledWith("TEST", token, instance._opts)
+      expect(req?.res?.cookie).toHaveBeenCalledWith(
+          Config.get("cookieName"),
+          saveToken.mock.calls[0][0],
+          Config.get("cookie")
+      );
       expect(instance.success).toHaveBeenCalledWith(user, undefined);
     });
   });

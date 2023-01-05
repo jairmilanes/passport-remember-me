@@ -1,0 +1,7 @@
+{
+  "verbose": true,
+  "exec": "ts-node --project ./tsconfig.json ./index.ts",
+  "watch": ["../src/**/*.{ts,ejs}", "./**/*.{ts,ejs}"],
+  "ignore": [],
+  "ext": "ts,ejs"
+}
