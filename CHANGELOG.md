@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/jairmilanes/passport-remember-me/compare/passport-remember-me-v0.1.1...passport-remember-me-v0.1.2) (2023-01-05)
+
+
+### Bug Fixes
+
+* added port env variable to code to fix render web service ([12993bf](https://github.com/jairmilanes/passport-remember-me/commit/12993bfb9fd464266b1d445315e18317a35a9841))
+
 ## [0.1.1](https://github.com/jairmilanes/passport-remember-me/compare/passport-remember-me-v0.1.0...passport-remember-me-v0.1.1) (2023-01-05)
 
 
