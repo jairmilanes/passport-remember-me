@@ -22,6 +22,9 @@ The logic is as follows:
 - If the user is found, remember me authenticates the user and generates a new token and cookie.
 - This new cookie is than passed to the saveToken callback for persistency.
 
+## Demo
+
+For a working example of this strategy, visit [here](https://remember-me-strategy.onrender.com).
 
 ## Install
 
