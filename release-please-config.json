@@ -6,10 +6,10 @@
       "package-name": "@jmilanes/passport-remember-me",
       "release-type": "node",
       "target-branch": "master",
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
       "draft": false,
-      "prerelease": true,
+      "prerelease": false,
       "initial-version": "0.0.1"
     }
   },

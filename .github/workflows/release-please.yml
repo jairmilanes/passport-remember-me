@@ -36,7 +36,9 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
 
       - name: Deploy
+        if: ${{ steps.release.outputs.release_created }}
         uses: bankfliptech/deploy-to-render@v1
         with:
           serviceId: ${{ secrets.RENDER_SERVICE_ID }}
           apiKey: ${{ secrets.RENDER_API_KEY }}
+          deployHookURL: ${{ secrets.RENDER_DEPLOY_HOOK }}
