@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/jairmilanes/passport-remember-me/compare/passport-remember-me-v0.1.0...passport-remember-me-v0.1.1) (2023-01-05)
+
+
+### Bug Fixes
+
+* fixed install path to strategy from example ([9faf7ad](https://github.com/jairmilanes/passport-remember-me/commit/9faf7ad4e0b16f453aa0ed73da95d8275e9eb6cf))
+
 ## [0.1.0](https://github.com/jairmilanes/passport-remember-me/compare/passport-remember-me-v0.0.2...passport-remember-me-v0.1.0) (2023-01-05)
 
 

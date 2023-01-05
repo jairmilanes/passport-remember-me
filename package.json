@@ -1,6 +1,6 @@
 {
   "name": "@jmilanes/passport-remember-me",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Passport strategy to authenticate users with remember me cookie.",
   "keywords": [
     "passport",
